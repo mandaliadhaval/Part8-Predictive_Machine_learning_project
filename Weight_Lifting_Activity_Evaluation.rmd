@@ -36,10 +36,10 @@ Step 6: Predicting the classification of the model on test set
 ### Step 1: Data Processing
 
 ```{r Data Import}
-#trainURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
-#testURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
-#download.file(trainURL,destfile = "training.csv")
-#download.file(testURL,destfile = "testing.csv")
+trainURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(trainURL,destfile = "training.csv")
+download.file(testURL,destfile = "testing.csv")
 
 trainingdata <- read.csv("training.csv")
 testingdata <- read.csv("testing.csv")
@@ -67,6 +67,9 @@ classelevels <- levels(trainingdata$classe)
 cleantrainingdata <- data.frame(data.matrix(trainingdata))
 cleantrainingdata$classe <- factor(cleantrainingdata$classe,labels = classelevels)
 cleantestingdata <- data.frame(data.matrix(testingdata))
+
+rm(trainingdata)
+rm(testingdata)
 
 ```
 
@@ -241,6 +244,29 @@ plot(rfMod.exclude, , cex=0.7, main='Error vs No. of trees plot')
 par(mfrow=c(1,1)) 
 ```
 
+# Test results
+
+Although we've chosen the `rfMod.exclude` it's still nice to see what the other 3 models would predict on the final test set.
+Let's look at predictions for all models on the final test set. 
+
+```{r Prediction}
+predictions <- t(cbind(
+    exclude=as.data.frame(predict(rfMod.exclude, cleantestingdata[, -excludeColumns]), optional=TRUE),
+    cleaned=as.data.frame(predict(rfMod.cleaned, cleantestingdata), optional=TRUE),
+    pcaAll=as.data.frame(predict(rfMod.pca.all, testing.pca.all), optional=TRUE),
+    pcaExclude=as.data.frame(predict(rfMod.pca.subset, testing.pca.subset), optional=TRUE)
+))
+predictions
+
+rm(rfMod.cleaned)
+rm(rfMod.pca.subset)
+rm(rfMod.pca.all)
+gc()
+
+```
+
+
+
 To really look in depth at the distances between predictions we can use MDSplot and cluster prediction and results
 
 ```{r PlotPCA}
@@ -264,24 +290,7 @@ proc.time() - start
 gc()
 ```
 
-
-# Test results
-
-Although we've chosen the `rfMod.exclude` it's still nice to see what the other 3 models would predict on the final test set.
-Let's look at predictions for all models on the final test set. 
-
-```{r Prediction}
-predictions <- t(cbind(
-    exclude=as.data.frame(predict(rfMod.exclude, cleantestingdata[, -excludeColumns]), optional=TRUE),
-    cleaned=as.data.frame(predict(rfMod.cleaned, cleantestingdata), optional=TRUE),
-    pcaAll=as.data.frame(predict(rfMod.pca.all, testing.pca.all), optional=TRUE),
-    pcaExclude=as.data.frame(predict(rfMod.pca.subset, testing.pca.subset), optional=TRUE)
-))
-predictions
-```
-
 The predictions don't really change a lot with each model, but since we have most faith in the `rfMod.exclude`, we'll keep that as final answer. 
-
 
 
 

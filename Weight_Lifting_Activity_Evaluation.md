@@ -4,7 +4,7 @@ author: "Dhaval Mandalia"
 date: "January 8, 2019"
 output:
     html_document:
-      keep_md: yes
+      keep_md: TRUE
 ---
 
 
@@ -34,10 +34,10 @@ Step 6: Predicting the classification of the model on test set
 
 
 ```r
-#trainURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
-#testURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
-#download.file(trainURL,destfile = "training.csv")
-#download.file(testURL,destfile = "testing.csv")
+trainURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(trainURL,destfile = "training.csv")
+download.file(testURL,destfile = "testing.csv")
 
 trainingdata <- read.csv("training.csv")
 testingdata <- read.csv("testing.csv")
@@ -74,6 +74,9 @@ classelevels <- levels(trainingdata$classe)
 cleantrainingdata <- data.frame(data.matrix(trainingdata))
 cleantrainingdata$classe <- factor(cleantrainingdata$classe,labels = classelevels)
 cleantestingdata <- data.frame(data.matrix(testingdata))
+
+rm(trainingdata)
+rm(testingdata)
 ```
 
 ### Exploratory data analyses 
@@ -113,7 +116,7 @@ p2 <- ggplot(subTrain, aes(classe, magnet_arm_x)) +
 multiplot(p1,p2,cols=2)
 ```
 
-![plot of chunk Plot correlations](figure/Plot correlations-1.png)
+![](Weight_Lifting_Activity_Evaluation_files/figure-html/Plot correlations-1.png)<!-- -->
 These charts that indicate that there is no firm separation of classes. Next step will be to train model to improve prediction.
 
 ### Model selection 
@@ -131,7 +134,7 @@ excludeColumns <- c(highlyCorrelated, classeIndex)
 corrplot(correlationMatrix, method="color", type="lower", order="hclust", tl.cex=0.70, tl.col="black", tl.srt = 45, diag = FALSE)
 ```
 
-![plot of chunk Variable Selection](figure/Variable Selection-1.png)
+![](Weight_Lifting_Activity_Evaluation_files/figure-html/Variable Selection-1.png)<!-- -->
 
 We see that there are some features that are quite correlated with each other.
 We will have a model with these excluded. Also we'll try and reduce the features by running PCA on all and the excluded subset of the features
@@ -171,7 +174,7 @@ proc.time() - start
 
 ```
 ##    user  system elapsed 
-##  165.72    4.68  178.73
+##   92.15    2.08   94.68
 ```
 
 ```r
@@ -180,8 +183,8 @@ gc()
 
 ```
 ##             used   (Mb) gc trigger   (Mb)  max used   (Mb)
-## Ncells   2788962  149.0    4672457  249.6   4672457  249.6
-## Vcells 323679049 2469.5  934239763 7127.7 971446472 7411.6
+## Ncells   2592001  138.5    4881381  260.7   4881381  260.7
+## Vcells 322236372 2458.5  932854795 7117.2 970003789 7400.6
 ```
 
 
@@ -200,7 +203,7 @@ proc.time() - start
 
 ```
 ##    user  system elapsed 
-##  220.46    4.80  226.53
+##   88.88    2.48   92.01
 ```
 
 
@@ -219,7 +222,7 @@ proc.time() - start
 
 ```
 ##    user  system elapsed 
-##  207.10    5.06  213.27
+##   87.24    4.71   92.54
 ```
 
 
@@ -238,7 +241,7 @@ proc.time() - start
 
 ```
 ##    user  system elapsed 
-##  221.52   40.22  292.60
+##  152.59   17.22  239.57
 ```
 
 ```r
@@ -246,9 +249,9 @@ gc()
 ```
 
 ```
-##              used (Mb) gc trigger    (Mb)   max used    (Mb)
-## Ncells    2789406  149    4672457   249.6    4672457   249.6
-## Vcells 1268636379 9679 2183714987 16660.5 1930661732 14729.8
+##              used   (Mb) gc trigger    (Mb)   max used    (Mb)
+## Ncells    2592445  138.5    4881381   260.7    4881381   260.7
+## Vcells 1267193694 9668.0 2181983765 16647.3 1929218957 14718.8
 ```
 
 
@@ -468,78 +471,11 @@ varImpPlot(rfMod.exclude, cex=0.7, pch=16, main='Variable Importance Plot: rfMod
 plot(rfMod.exclude, , cex=0.7, main='Error vs No. of trees plot')
 ```
 
-![plot of chunk Error Plot](figure/Error Plot-1.png)
+![](Weight_Lifting_Activity_Evaluation_files/figure-html/Error Plot-1.png)<!-- -->
 
 ```r
 par(mfrow=c(1,1)) 
 ```
-
-To really look in depth at the distances between predictions we can use MDSplot and cluster prediction and results
-
-
-```r
-start <- proc.time()
-library(RColorBrewer)
-palette <- brewer.pal(length(classelevels), "Set1")
-rfMod.mds <- MDSplot(rfMod.exclude, as.factor(classelevels), k=2, pch=20, palette=palette)
-```
-
-```
-## Error: cannot allocate vector of size 1.6 Gb
-```
-
-```r
-library(cluster)
-rfMod.pam <- pam(1 - rfMod.exclude$proximity, k=length(classelevels), diss=TRUE)
-plot(
-  rfMod.mds$points[, 1], 
-  rfMod.mds$points[, 2], 
-  pch=rfMod.pam$clustering+14, 
-  col=alpha(palette[as.numeric(subTrain$classe)],0.5), 
-  bg=alpha(palette[as.numeric(subTrain$classe)],0.2), 
-  cex=0.5,
-  xlab="x", ylab="y")
-```
-
-```
-## Error in plot(rfMod.mds$points[, 1], rfMod.mds$points[, 2], pch = rfMod.pam$clustering + : object 'rfMod.mds' not found
-```
-
-```r
-legend("bottomleft", legend=unique(rfMod.pam$clustering), pch=seq(15,14+length(classelevels)), title = "PAM cluster")
-```
-
-```
-## Error in strwidth(legend, units = "user", cex = cex, font = text.font): plot.new has not been called yet
-```
-
-```r
-  legend("topleft", legend=classelevels, pch = 16, col=palette, title = "Classification")
-```
-
-```
-## Error in strwidth(legend, units = "user", cex = cex, font = text.font): plot.new has not been called yet
-```
-
-```r
-proc.time() - start
-```
-
-```
-##    user  system elapsed 
-##  158.76   39.24  267.55
-```
-
-```r
-gc()
-```
-
-```
-##              used   (Mb) gc trigger    (Mb)   max used    (Mb)
-## Ncells    2822640  150.8    4672457   249.6    4672457   249.6
-## Vcells 1268764004 9680.0 2620537984 19993.2 2081096674 15877.6
-```
-
 
 # Test results
 
@@ -565,8 +501,70 @@ predictions
 ## pcaExclude "B" "A" "B" "A" "A" "E" "D" "B" "A" "A" "B" "C" "B" "A" "E" "E" "A" "B" "B" "B"
 ```
 
-The predictions don't really change a lot with each model, but since we have most faith in the `rfMod.exclude`, we'll keep that as final answer. 
+```r
+rm(rfMod.cleaned)
+rm(rfMod.pca.subset)
+rm(rfMod.pca.all)
+gc()
+```
 
+```
+##             used   (Mb) gc trigger    (Mb)   max used    (Mb)
+## Ncells   2600448  138.9    4881381   260.7    4881381   260.7
+## Vcells 322368848 2459.5 1745587012 13317.8 1929218957 14718.8
+```
+
+
+
+To really look in depth at the distances between predictions we can use MDSplot and cluster prediction and results
+
+
+```r
+start <- proc.time()
+library(RColorBrewer)
+palette <- brewer.pal(length(classelevels), "Set1")
+rfMod.mds <- MDSplot(rfMod.exclude, as.factor(classelevels), k=2, pch=20, palette=palette)
+```
+
+![](Weight_Lifting_Activity_Evaluation_files/figure-html/PlotPCA-1.png)<!-- -->
+
+```r
+library(cluster)
+rfMod.pam <- pam(1 - rfMod.exclude$proximity, k=length(classelevels), diss=TRUE)
+plot(
+  rfMod.mds$points[, 1], 
+  rfMod.mds$points[, 2], 
+  pch=rfMod.pam$clustering+14, 
+  col=alpha(palette[as.numeric(subTrain$classe)],0.5), 
+  bg=alpha(palette[as.numeric(subTrain$classe)],0.2), 
+  cex=0.5,
+  xlab="x", ylab="y")
+legend("bottomleft", legend=unique(rfMod.pam$clustering), pch=seq(15,14+length(classelevels)), title = "PAM cluster")
+  legend("topleft", legend=classelevels, pch = 16, col=palette, title = "Classification")
+```
+
+![](Weight_Lifting_Activity_Evaluation_files/figure-html/PlotPCA-2.png)<!-- -->
+
+```r
+proc.time() - start
+```
+
+```
+##    user  system elapsed 
+## 3210.59  165.01 1524.08
+```
+
+```r
+gc()
+```
+
+```
+##             used   (Mb) gc trigger    (Mb)   max used    (Mb)
+## Ncells   2631384  140.6    4881381   260.7    4881381   260.7
+## Vcells 322947447 2463.9 1396469609 10654.3 1929218957 14718.8
+```
+
+The predictions don't really change a lot with each model, but since we have most faith in the `rfMod.exclude`, we'll keep that as final answer. 
 
 
 
